@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Մարկետինգ և կիրառական տնտեսագիտություն</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Noto Sans Armenian",sans-serif;background:#eef1f5;color:#20252d;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.app{width:min(860px,94%);background:#fff;border:1px solid #d9dde4;border-radius:10px;box-shadow:0 10px 35px #0001;padding:30px;margin:25px 0}
+.screen{display:none}.active{display:block}
+h1{text-align:center;margin:0 0 8px;font-size:29px;color:#20252d}
+.subtitle{text-align:center;color:#68717d;margin-bottom:28px}
+.categories{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+button{font-family:inherit;cursor:pointer;border-radius:7px;border:1px solid #cfd5dd;padding:14px 17px;font-size:16px;font-weight:600;transition:.15s}
+button:hover{background:#f4f6f8}
+.category{text-align:left;background:#f8f9fa;min-height:130px}
+.category strong{display:block;font-size:19px;margin-bottom:10px}
+.category span{font-weight:400;color:#69727e;line-height:1.5}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.badge{background:#f3f5f7;border:1px solid #dce0e5;border-radius:6px;padding:8px 11px;font-size:14px;font-weight:600}
+.timer{color:#313842;min-width:92px;text-align:center}
+.timer.warning{color:#a33b35}
+.progress{height:8px;background:#e6e9ed;border-radius:5px;margin:18px 0}
+.bar{height:100%;width:0;background:#586473;border-radius:5px;transition:.25s}
+.question{font-size:22px;font-weight:700;line-height:1.45;margin:25px 0 18px}
+.answers{display:grid;gap:10px}
+.answer{width:100%;text-align:left;background:#fafbfc;border:2px solid #d9dee5}
+.answer:hover{background:#f3f5f7}
+.answer.correct{background:#edf7ef;border-color:#4c9461;color:#246637;animation:pulse .35s}
+.answer.wrong{background:#faf0ef;border-color:#b85b53;color:#8c302a;animation:shake .3s}
+.answer:disabled{cursor:default}
+.feedback{min-height:28px;margin:14px 0;font-weight:700}
+.next{display:none;width:100%;background:#303944;color:#fff;border-color:#303944}
+.next.show{display:block}
+.result{text-align:center}
+.final-score{font-size:52px;font-weight:800;margin:18px 0;color:#303944}
+.result p{font-size:18px;color:#59626e}
+.restart,.home{width:100%;margin-top:10px}
+.restart{background:#303944;color:white;border-color:#303944}
+.home{background:#f3f5f7}
+.stats{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:18px 0}
+.stat{padding:10px 14px;background:#f5f6f8;border:1px solid #dfe3e8;border-radius:6px}
+@keyframes pulse{50%{transform:scale(1.015)}}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media(max-width:650px){.categories{grid-template-columns:1fr}.question{font-size:20px}.app{padding:20px}}
+</style>
+</head>
+<body>
+<div class="app">
+<section id="home" class="screen active">
+<h1>Գիտելիքի ստուգման խաղ</h1>
+<div class="subtitle">Մարկետինգի հմտություններ և կիրառական տնտեսագիտություն</div>
+<div class="categories">
+<button class="category" onclick="startGame('marketing')">
+<strong>Մարկետինգի հմտություններ</strong>
+<span>15 հարց • ընտրովի պատասխաններ • ժամանակաչափ</span>
+</button>
+<button class="category" onclick="startGame('economics')">
+<strong>Կիրառական տնտեսագիտություն</strong>
+<span>15 հարց • ընտրովի պատասխաններ • ժամանակաչափ</span>
+</button>
+</div>
+</section>
+
+<section id="quiz" class="screen">
+<div class="top">
+<div class="badge" id="categoryName"></div>
+<div class="badge">Միավոր՝ <span id="score">0</span></div>
+<div class="badge timer" id="timer">00:20</div>
+</div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="badge">Հարց <span id="qnum"></span> / <span id="total"></span></div>
+<div class="question" id="question"></div>
+<div class="answers" id="answers"></div>
+<div class="feedback" id="feedback"></div>
+<button class="next" id="next" onclick="nextQuestion()">Հաջորդ հարց →</button>
+</section>
+
+<section id="result" class="screen result">
+<h1>Թեստն ավարտված է</h1>
+<div class="final-score" id="finalScore"></div>
+<div class="stats">
+<div class="stat">Ճիշտ՝ <b id="correctCount"></b></div>
+<div class="stat">Սխալ՝ <b id="wrongCount"></b></div>
+<div class="stat">Ընդհանուր՝ <b id="totalCount"></b></div>
+</div>
+<p id="message"></p>
+<button class="restart" onclick="restart()">Նորից խաղալ</button>
+<button class="home" onclick="goHome()">Գլխավոր էջ</button>
+</section>
+</div>
+
+<script>
+const data={
+marketing:{name:"Մարկետինգի հմտություններ",questions:[
+["Ի՞նչ է մարքեթինգի հիմնական նպատակը?",["Միայն ապրանքը վաճառելը","Հաճախորդի կարիքները հասկանալն ու բավարարելը","Աշխատողների թիվը մեծացնելը","Միայն գովազդ պատրաստելը"],1],
+["Ի՞նչ է թիրախային շուկան?",["Բոլոր հնարավոր մարդիկ","Ապրանքի պահեստը","Հաճախորդների այն խումբը, որի համար նախատեսված է առաջարկը","Միայն մրցակիցները"],2],
+["Ո՞րն է մարքեթինգի 4P-երից մեկը:",["People","Product","Plan","Profit"],1],
+["Ի՞նչ է բրենդը?",["Միայն ընկերության անունը","Ընկերության կամ ապրանքի ճանաչելի ինքնությունն ու կերպարը","Միայն լոգոն","Ապրանքի ինքնարժեքը"],1],
+["Ո՞րն է արդյունավետ գովազդի կարևոր հատկանիշը?",["Հստակ ուղերձը և ճիշտ լսարանին հասնելը","Որքան հնարավոր է երկար տեքստը","Միայն բարձր գինը","Տեղեկություն չտալը"],0],
+["Ի՞նչ է հաճախորդի կարիքը?",["Այն, ինչ հաճախորդը ցանկանում կամ անհրաժեշտ է համարում","Ընկերության աշխատակիցների աշխատավարձը","Մրցակցի գովազդը","Ապրանքի փաթեթավորումը"],0],
+["Ի՞նչ է շուկայի ուսումնասիրությունը?",["Մրցակիցների և հաճախորդների մասին տեղեկատվության հավաքագրում և վերլուծություն","Միայն ապրանք գնելը","Ապրանքի պահեստավորումը","Հաշվապահական հաշվարկը"],0],
+["Ի՞նչ է վաճառքի խթանումը?",["Գնորդին գնելու խրախուսող միջոցառումների օգտագործում","Ապրանքի արտադրությունը դադարեցնելը","Գովազդը թաքցնելը","Աշխատողների կրճատումը"],0],
+["Ինչո՞ւ է կարևոր հաճախորդի կարծիքը?",["Այն օգնում է բարելավել ապրանքը կամ ծառայությունը","Որովհետև միշտ բարձրացնում է գինը","Որովհետև փոխարինում է հաշվապահությանը","Որովհետև վերացնում է մրցակցությունը"],0],
+["Ի՞նչ է կարգախոսը (slogan)?",["Կարճ և հիշվող արտահայտություն, որը ներկայացնում է բրենդը կամ առաջարկը","Ապրանքի ինքնարժեքը","Գաղտնի պայմանագիր","Հաշվետվություն"],0],
+["Ի՞նչ է մրցակիցը?",["Նույն կամ նման ապրանք կամ ծառայություն առաջարկող կազմակերպություն","Միայն գնորդը","Մատակարարը միշտ","Բանկը"],0],
+["Ո՞րն է սոցիալական մեդիայի մարքեթինգի օրինակ?",["Instagram-ում ապրանքի մասին նպատակային հրապարակում","Պահեստի մաքրում","Հաշվապահական գրանցում","Աշխատանքային պայմանագիր"],0],
+["Ինչպե՞ս կարելի է տարբերակել ապրանքը մրցակիցներից?",["Ստեղծել հստակ արժեքային առաջարկ","Թաքցնել ապրանքի առավելությունները","Չուսումնասիրել շուկան","Միշտ նվազեցնել որակը"],0],
+["Ի՞նչ է հաճախորդների հավատարմությունը?",["Հաճախորդի պատրաստակամությունը կրկին ընտրել նույն բրենդը","Միայն մեկ անգամ գնելը","Մրցակցի գովազդը","Ապրանքի ինքնարժեքը"],0],
+["Ի՞նչ է արժեքային առաջարկը?",["Պատճառը, թե ինչու հաճախորդը պետք է ընտրի տվյալ ապրանքը կամ ծառայությունը","Միայն ապրանքի գինը","Աշխատակիցների ցուցակը","Ընկերության հասցեն"],0]
+]},
+economics:{name:"Կիրառական տնտեսագիտություն",questions:[
+["Ի՞նչ է շահույթը?",["Եկամուտ − ծախսեր","Ծախսեր + պարտքեր","Միայն եկամուտը","Ապրանքի քանակը"],0],
+["Եթե եկամուտը 100,000 դրամ է, իսկ ծախսերը՝ 70,000 դրամ, շահույթը որքա՞ն է:",["20,000 դրամ","30,000 դրամ","40,000 դրամ","170,000 դրամ"],1],
+["Ի՞նչ է պահանջարկը?",["Ապրանքի կամ ծառայության նկատմամբ գնորդների ցանկությունն ու հնարավորությունը գնելու","Միայն արտադրողի ցանկությունը","Ապրանքի ինքնարժեքը","Պետական հարկը"],0],
+["Ի՞նչ է առաջարկը?",["Վաճառողների կողմից շուկային առաջարկվող ապրանքների կամ ծառայությունների քանակը","Գնորդների եկամուտը","Միայն պահանջարկը","Աշխատավարձը"],0],
+["Եթե ապրանքի գինը բարձրանում է, սովորաբար պահանջարկը ինչպե՞ս է փոխվում:",["Աճում է","Նվազում է","Միշտ մնում է նույնը","Վերանում է"],1],
+["Ի՞նչ է գնաճը?",["Գների ընդհանուր մակարդակի կայուն աճը","Միայն մեկ ապրանքի էժանացումը","Աշխատավարձի նվազումը","Արտադրության աճը"],0],
+["Ի՞նչ է բյուջեն?",["Եկամուտների և ծախսերի պլան","Միայն պարտքերի ցանկը","Միայն աշխատավարձը","Ապրանքների ցուցակը"],0],
+["Եթե 50,000 դրամից ծախսել ես 18,000 դրամ, որքան գումար կմնա:",["22,000","32,000","38,000","68,000"],1],
+["Ի՞նչ է ինքնարժեքը?",["Ապրանքի կամ ծառայության ստեղծման հետ կապված ծախսերի արժեքը","Վաճառքի գինը միշտ","Միայն շահույթը","Հարկի չափը"],0],
+["Եթե ապրանքը գնել ես 4,000 դրամով և վաճառել 5,500 դրամով, շահույթը որքա՞ն է:",["500 դրամ","1,000 դրամ","1,500 դրամ","9,500 դրամ"],2],
+["Ի՞նչ է հարկը?",["Պետությանը օրենքով վճարվող պարտադիր վճար","Կամավոր նվիրատվություն","Բանկային ավանդ","Ապրանքի զեղչ"],0],
+["Ի՞նչ է բանկային ավանդը?",["Բանկում պահվող գումար, որի դիմաց պայմաններով կարող է վճարվել տոկոս","Բանկից վերցված վարկը","Ապրանքի գինը","Պետական հարկը"],0],
+["Ի՞նչ է վարկը?",["Փոխառված գումար, որը վերադարձվում է պայմանավորված ժամկետում և պայմաններով","Նվեր ստացած գումար","Շահույթը","Ապրանքի ինքնարժեքը"],0],
+["Ի՞նչ է ռեսուրսը տնտեսագիտության մեջ?",["Արտադրության համար օգտագործվող սահմանափակ միջոց","Միայն փողը","Միայն աշխատողը","Միայն հողը"],0],
+["Եթե բիզնեսի եկամուտը 250,000 դրամ է, իսկ ընդհանուր ծախսերը՝ 180,000 դրամ, շահույթը որքա՞ն է:",["50,000","60,000","70,000","80,000"],2]
+]}};
+
+let category="",current=[],index=0,score=0,correct=0,wrong=0,answered=false,timer=null,timeLeft=20;
+
+function show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active")}
+function shuffle(arr){return arr.map(v=>({v,r:Math.random()})).sort((a,b)=>a.r-b.r).map(x=>x.v)}
+function startGame(cat){
+ category=cat; current=data[cat].questions.map(q=>[q[0],q[1].map((a,i)=>({text:a,correct:i===q[2]}))]);
+ current=shuffle(current); index=0;score=0;correct=0;wrong=0;
+ document.getElementById("categoryName").textContent=data[cat].name;
+ document.getElementById("total").textContent=current.length;
+ show("quiz");renderQuestion();
+}
+function startTimer(){
+ clearInterval(timer);timeLeft=20;updateTimer();
+ timer=setInterval(()=>{timeLeft--;updateTimer();if(timeLeft<=0){clearInterval(timer);if(!answered) timeOut()}},1000)
+}
+function updateTimer(){const t=document.getElementById("timer");t.textContent="00:"+String(timeLeft).padStart(2,"0");t.classList.toggle("warning",timeLeft<=5)}
+function renderQuestion(){
+ answered=false;const q=current[index];
+ document.getElementById("qnum").textContent=index+1;document.getElementById("question").textContent=q[0];
+ document.getElementById("score").textContent=score;document.getElementById("feedback").textContent="";
+ document.getElementById("next").classList.remove("show");
+ document.getElementById("bar").style.width=(index/current.length*100)+"%";
+ const answers=document.getElementById("answers");answers.innerHTML="";
+ const shuffled=shuffle(q[1]);
+ shuffled.forEach((a,i)=>{const b=document.createElement("button");b.className="answer";b.textContent=String.fromCharCode(65+i)+". "+a.text;b.onclick=()=>choose(a.correct,b);answers.appendChild(b)});
+ startTimer();
+}
+function timeOut(){
+ answered=true;wrong++;const buttons=document.querySelectorAll(".answer");buttons.forEach(b=>b.disabled=true);
+ const q=current[index];buttons.forEach(b=>{if(b.textContent.slice(3)===q[1].find(x=>x.correct).text)b.classList.add("correct")});
+ document.getElementById("feedback").textContent="Ժամանակը սպառվեց։";
+ document.getElementById("next").classList.add("show");
+}
+function choose(isCorrect,btn){
+ if(answered)return;answered=true;clearInterval(timer);
+ const buttons=document.querySelectorAll(".answer");buttons.forEach(b=>b.disabled=true);
+ if(isCorrect){score++;correct++;btn.classList.add("correct");document.getElementById("feedback").textContent="Ճիշտ պատասխան։ +1 միավոր";}
+ else{wrong++;btn.classList.add("wrong");const q=current[index];buttons.forEach(b=>{if(b.textContent.slice(3)===q[1].find(x=>x.correct).text)b.classList.add("correct")});document.getElementById("feedback").textContent="Սխալ պատասխան։ Ճիշտ տարբերակը նշված է։"}
+ document.getElementById("score").textContent=score;document.getElementById("next").classList.add("show");
+}
+function nextQuestion(){index++;if(index>=current.length)finish();else renderQuestion()}
+function finish(){
+ clearInterval(timer);document.getElementById("finalScore").textContent=score+" / "+current.length;
+ document.getElementById("correctCount").textContent=correct;document.getElementById("wrongCount").textContent=wrong;document.getElementById("totalCount").textContent=current.length;
+ document.getElementById("message").textContent=score>=14?"Շատ բարձր արդյունք։":score>=11?"Շատ լավ արդյունք։":score>=8?"Լավ արդյունք։":"Արժե ևս մեկ անգամ կրկնել նյութը։";
+ show("result");
+}
+function restart(){startGame(category)}
+function goHome(){clearInterval(timer);show("home")}
+</script>
+</body>
+</html>
